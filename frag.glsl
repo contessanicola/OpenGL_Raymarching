@@ -13,7 +13,7 @@
 #define SUN_SIZE 0.001
 #define SUN_SHARPNESS 1.5
 #define POWER 8
-#define OSCILLATION 1
+#define OSCILLATION 0
 #define AA 1
 
 
@@ -28,7 +28,8 @@ uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
-
+vec4 mandelbulbTrap;
+vec4 mengerTrap;
 float res;
 
 // https://github.com/HackerPoet/MarbleMarcher/blob/master/assets/frag.glsl
@@ -107,13 +108,52 @@ vec2 mandelBox2(vec3 z)
 }
 
 float sdMandelbulb(vec3 p) {
+    /*vec3 z = p;
+    float m = dot(z,z);
+
+    vec4 trap = vec4(abs(z),m);
+	float dz = 1.0;
+
+    float power = POWER;
+    if(OSCILLATION == 1)
+        power = (sin(iTime*0.1)+1) * POWER/2 + 1;
+    
+	for( int i=0; i<15; i++ )
+    {
+        float r = length(z);
+        if (r>2.) break;	
+
+		dz = power*pow(r,(power))*dz + 1.0; 
+
+        //dz = 8.0*pow(sqrt(m),7.0)*dz + 1.0;
+
+        float b = power*acos( z.z/r);
+        float a = power*atan( z.y, z.x );
+        z = p + pow(r,power) * vec3( sin(b)*cos(a),sin(b)*sin(a), cos(b) );      
+        
+        trap = min( trap, vec4(abs(z),m) );
+
+        m = dot(z,z);
+		if( m > 256.0 )
+            break;
+    }
+
+    mandelbulbTrap =vec4(m,trap.yzw);
+
+    // distance estimation (through the Hubbard-Douady potential)
+    return 0.25*log(m)*sqrt(m)/dz;*/
+
+
 	vec3 z = p;
+    
+    float m = dot(z,z);
+    vec4 trap = vec4(abs(z),m);
     float power = POWER;
     if(OSCILLATION == 1)
         power = (sin(iTime*0.1)+1) * POWER/2 + 1;
 	float dr = 1.0;
 	float r = 0.0;
-	for (int i = 0; i < 15 ; i++) {
+	for (int i = 0; i < 25 ; i++) {
 		r = length(z);
 		if (r>2) break;	
 		// convert to polar coordinates
@@ -123,8 +163,16 @@ float sdMandelbulb(vec3 p) {
 		// scale and rotate the point	
 		// convert back to cartesian coordinates
 		z = pow(r,power)*vec3(sin(theta)*cos(phi), sin(phi)*sin(theta), cos(theta));
+        //w = p + pow(r,8.0) * vec3( sin(b)*sin(a), cos(b), sin(b)*cos(a) );
+        
 		z+=p;
+
+        trap = min(trap, vec4(abs(z),m) );
+        m = dot(z,z);
+        
 	}
+
+    mandelbulbTrap = vec4(m,trap.yzw);
 	return 0.5*log(r)*r/dr;
 }
 
@@ -170,11 +218,35 @@ float sdBox(vec3 p, vec3 b){
   return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);
 }
 
+float sdOctahedron(vec3 p, float s){
+    p = abs(p);
+    float m = p.x + p.y + p.z - s;
+    vec3 r = 3.0*p - m;
+    /*vec3 o = min(r, 0.0);
+    o = max(r*2.0 - o*3.0 + (o.x+o.y+o.z), 0.0);
+    return length(p - s*o/(o.x+o.y+o.z));*/
+
+    // my original version
+	vec3 q;
+         if( r.x < 0.0 ) q = p.xyz;
+    else if( r.y < 0.0 ) q = p.yzx;
+    else if( r.z < 0.0 ) q = p.zxy;
+    else return m*0.57735027;
+    float k = clamp(0.5*(q.z-q.y+s),0.0,s); 
+    return length(vec3(q.x,q.y-s+k,q.z-k)); 
+
+
+
+}
+
 float sdMenger(vec3 p){
     float size=10.;
 	p.z -=3.; 
     vec3[] s = vec3[](vec3(1,1,1),vec3(1,1,0));
     
+    float m = dot(p,p);
+    vec4 trap = vec4(abs(p),m);
+
     for(int iter=0;iter<10;++iter){
        
         p=abs(p);
@@ -184,8 +256,12 @@ float sdMenger(vec3 p){
         if(p.z > .5*size) p -= size*s[0];
         else p -= size*s[1];
         size /=3.;
+
+        trap = min( trap, vec4(abs(p),m) );
+        m = dot(p,p);
         
     }
+    mengerTrap = vec4(m,trap.yzw);
     float result = sdBox(p,vec3(1.5*size));
     return result;
 }
@@ -200,27 +276,26 @@ float sminCubic( float a, float b, float k ){
 }
 
 float distanceField(vec3 p){
-    
-    //float Sphere = sdSphere(p-vec3(0.0,0.0,0.0),2.0);
-    //float Box = sdBox(p,vec3(2.0));
-    //float Torus = sdTorus(p,vec2(2.0,0.5));
+    float ramiel = sdOctahedron(p-vec3(8.0,0.0,0.0),2.0);
+    float Sphere = sdSphere(p-vec3(-4.0,0.0,0.0),2.0);
+    float Box = sdBox(p-vec3(2.0,0.0,0.0),vec3(2.0));
+    //float Torus = sdTorus(p-vec3(4.0,0.0,0.0),vec2(2.0,0.5));
+    float Plane = sdPlane(p-vec3(0.0,-2.0,0.0));
     //float SphereMod = sdSphereMod(p,2.0);
-    //float Plane = sdPlane(p-vec3(0.0,-2.0,0.0));
-    
-    //float Menger = sdMenger(p);
+    float Menger = sdMenger(p);
     //float Mandelbulb2 = sdMandelbulb2(p);
     //float MandelBox = mandelbox(p);
     //float MandelBox2 = mandelBox2(p).x;
-    //return sminCubic(Sphere, Torus,0.5);
+    //return sminCubic(Sphere, Torus ,0.5);
     //return max(Torus,SphereMod);
-    //return min(Sphere,Plane);
+    return min(min(Box,Plane),min(Sphere,ramiel));
     
-    float Box = sdBox(p,vec3(1.5));
-    if(Box > 0.1) return Box;
-    float Mandelbulb = sdMandelbulb(p);
-    return Mandelbulb;
+    //float Box = sdBox(p,vec3(1.5));
+    //if(Box > 0.1) return Box;
+    //float Mandelbulb = sdMandelbulb(p);
+    //return Mandelbulb;
 
-    //return SphereMod;
+    //return Menger;
 }
 
 vec3 calcNormal(vec3 p, float h){ // https://www.iquilezles.org/www/articles/normalsSDF/normalsSDF.htm
@@ -275,7 +350,7 @@ vec3 raymarching(vec3 ro, vec3 rd, out int iter){
 
         if (t > MAX_DIST){ break; }
         else if (d < min_dist){
-            s += d / min_dist;         // can use this for fake ambient occlusion
+            s += d / min_dist;         // can use this for ambient occlusion
             break;
         }     
         t += d;      
@@ -294,28 +369,53 @@ vec4 render(vec3 ro, vec3 rd){
     float min_dist = max(res*t, MIN_DIST);
     vec3 p = ro + rd * t;
     if(d < min_dist){
-        vec3 n = calcNormal(p,min_dist);
+        
+        //COLOR
+        
+        //MANDELBULB COLOR 
+        col.xyz = vec3(0.02,0.20,0.40);
+		//col.xyz = mix( col.xyz, vec3(0.3,0.1,0.45), clamp(pow(mandelbulbTrap.y,4),0.0,1.0) );
+	 	//col.xyz = mix( col.xyz, vec3(0.3,0.1,0.45), clamp(mandelbulbTrap.z*mandelbulbTrap.z,0.0,1.0) );
+        //col.xyz = mix( col.xyz, vec3(0.3,0.1,0.45), clamp(pow(mandelbulbTrap.w,10.0),0.0,1.0) );
 
+        //col.xyz = vec3(0.01);
+		//col.xyz = mix( col.xyz, vec3(0.10,0.20,0.30), clamp(mandelbulbTrap.y,0.0,1.0) );
+	 	//col.xyz = mix( col.xyz, vec3(0.02,0.10,0.30), clamp(mandelbulbTrap.z*mandelbulbTrap.z,0.0,1.0) );
+        //col.xyz = mix( col.xyz, vec3(0.30,0.10,0.02), clamp(pow(mandelbulbTrap.w,6.0),0.0,1.0) );
+        col.xyz *= 0.5;
+        //MANDELBULB COLOR 
+        
+        float ks = 1.0;
+        vec3 n = calcNormal(p,min_dist);
+      
         vec3 sun_light = LIGHT_COLOR * clamp(dot(n,LIGHT_DIRECTION ), 0., 1.);//LIGHT_COLOR * max(dot(n, LIGHT_DIRECTION), 0.0);
         vec3 sky_light = (BACKGROUND_COLOR*0.10)* clamp(0.5+0.5*dot(n,vec3(0.,1.,0.)), 0., 1.);
         vec3 bounce_light = (vec3(.06,.063,.07))* clamp(0.5+0.5*dot(n,vec3(0.,-1.,0.)), 0., 1.);
         //vec3 bounce_light = (LIGHT_COLOR*0.015)* sqrt(clamp( 0.1-0.9*n.y, 0.0, 1.0 ))*clamp(1.0-0.1*p.y,0.0,1.0);
         vec3 sun_shadow = LIGHT_COLOR * softShadow(p+n*min_dist, LIGHT_DIRECTION, 0.01, 64.0, 12.0, min_dist);
         
+        //vec3 ref = reflect(rd, n);
+        vec3 sun_half = normalize(LIGHT_DIRECTION-rd);
+        vec3 sun_specular = ks*pow(clamp(dot(n,sun_half),0.0,1.0),8.0)*sun_light*(0.04+0.96*pow(clamp(1.0+dot(sun_half,rd),0.0,1.0),5.0));
+        
         // IF YOU HAVE A PLANE IT SHOULD TECNICALLY BOUNCE SOME LIGHT FROM THE SUN UNDER YOUR OBJECT, THIS LIGHT SHOULD
         // COME FROM THE BOTTOM dot(n,vec3(0.0,-1.0,0.0)) AND IT SHOULD BE THE COLOR OF THE SUN * THE PLANE OR BOTTOM LIGHT
 
-        float ao = ambientOcclusion(p,n);
+        float ao = ambientOcclusion(p,n);  
+
+        vec3 sum = vec3(0.0);
+        sum += 7 * sun_light * sun_shadow;  
+        sum += 2 * sky_light * ao;     
+        sum += 4.0 * bounce_light * ao;  
+        col.xyz *= sum;
+
+        col.xyz += sun_specular * LIGHT_COLOR * sun_shadow * 10; //LIGHT COLOR * SPECULAR INTENSITY * SPECULAR FACTOR 
         
-        /*float k = min_d * min(t, 1.0);
-        vec3 reflected = n - 2.0 * dot(n,n) * n;
-        float specular = max(dot(reflected, LIGHT_DIRECTION), 0.0);
-        specular = pow(specular, 40);   
         
-        //col.xyz += LIGHT_COLOR * specular * (0.25); //LIGHT COLOR * SPECULAR INTENSITY * SPECULAR FACTOR*/
-        col.xyz += sun_light * sun_shadow;        
-        col.xyz += sky_light * ao;   
-        col.xyz += bounce_light * ao;
+        //SINCE OUR OBJECT NOW HAS A COLOR INSTEAD OF HAVING VEC(0.0) WE CAN'T DO THIS ANYMORE
+        //col.xyz += sun_light;// * sun_shadow;        
+        //col.xyz += sky_light * ao;   
+        //col.xyz += bounce_light * ao;
     }
     else {
         vec3 sky = BACKGROUND_COLOR - max(rd.y,0.0)*0.5;
