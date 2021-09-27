@@ -9,3 +9,9 @@ https://www.shadertoy.com/
 
 
 ![menger3xAA](https://user-images.githubusercontent.com/47363206/134787511-deddeaf3-2005-42d4-8c58-a9de09e94214.png)
+
+
+![mandelbulb](https://user-images.githubusercontent.com/47363206/134894302-8012935f-61b9-42c4-93ae-81b7b7c943d8.png)
+
+
+![detailsmandelbulb](https://user-images.githubusercontent.com/47363206/134894323-b88fbefc-544f-48be-93eb-704fedffc296.png)
