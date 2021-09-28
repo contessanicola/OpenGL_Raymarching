@@ -17,7 +17,7 @@ Q/E - Decrease/Increase speed
 
 Left/Right arrow - change scene
 
-##screenshots
+## screenshots
 
 ![menger3xAA](https://user-images.githubusercontent.com/47363206/134787511-deddeaf3-2005-42d4-8c58-a9de09e94214.png)
 
