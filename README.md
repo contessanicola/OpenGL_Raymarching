@@ -8,9 +8,13 @@ https://www.shadertoy.com/
 
 
 WASD - movement
+
 Right Click - change direction
+
 CTRL/SPACE - down/up
+
 Q/E - Decrease/Increase speed
+
 Left/Right arrow - change scene
 
 
