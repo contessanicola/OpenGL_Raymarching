@@ -10,14 +10,16 @@
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void processInput(GLFWwindow *window);
 
 // settings
 const unsigned int WIDTH = 1280;
 const unsigned int HEIGHT = 720;
+unsigned int scene = 0;
 
 //camera
-Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+Camera camera(glm::vec3(0.0f, 0.0f, 9.0f));
 float lastX = WIDTH / 2.0f;
 float lastY = HEIGHT / 2.0f;
 bool firstMouse = true;
@@ -49,6 +51,7 @@ int main()
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 	glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetScrollCallback(window, scroll_callback);
+	glfwSetKeyCallback(window, key_callback);
 
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
@@ -91,6 +94,7 @@ int main()
         lastFrame = currentFrame;
 		if (currentFrame - lastFrameTemp >= 1.0){
 			std::cout << frameCount << std::endl;;
+			std::cout << scene << std::endl;
 			frameCount = 0;
 			lastFrameTemp = currentFrame;
 		}
@@ -108,10 +112,11 @@ int main()
 		view = camera.GetViewMatrix();  
 		projection = glm::perspective(glm::radians(camera.Zoom), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f);
 
-		shaders.setVec3("cameraPos",camera.Position);
+		shaders.setVec3("cameraPos", camera.Position);
 		shaders.setVec2("iResolution", glm::vec2(WIDTH,HEIGHT));
 		shaders.setFloat("iFov", camera.Zoom);
 		shaders.setFloat("iTime", (float)glfwGetTime());
+		shaders.setInt("scene", scene);
 
 		shaders.setMat4("model", model);
 		shaders.setMat4("view", view);
@@ -147,6 +152,10 @@ void processInput(GLFWwindow *window)
         camera.ProcessKeyboard(UP, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
         camera.ProcessKeyboard(DOWN, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+		camera.ProcessKeyboard(Q, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+		camera.ProcessKeyboard(E, deltaTime);
 
 }
 
@@ -181,3 +190,12 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
     camera.ProcessMouseScroll(yoffset);
 }
 
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    if (key == GLFW_KEY_LEFT && action == GLFW_PRESS){
+        scene--;
+    }
+	if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS){
+    	scene++;
+    }		
+}
