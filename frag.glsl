@@ -245,7 +245,7 @@ float sdMenger(vec3 p){
     float m = dot(p,p);
     vec4 trap = vec4(abs(p),m);
 
-    for(int iter=0;iter<30;++iter){
+    for(int iter=0;iter<20;++iter){
        
         p=abs(p);
         if(p.y > p.x) p.yx = p.xy;
@@ -337,7 +337,7 @@ vec3 calcNormal(vec3 p, float h){ // https://www.iquilezles.org/www/articles/nor
 
 //TO WORK THE BEST THIS NEED A PROPER DISTANCE FIELD COULD CAUSE ARTIFACTS WITH MIN()
 float softShadow(in vec3 ro, in vec3 rd, float mint, float maxt, float k, float min_dist){ //https://www.iquilezles.org/www/articles/rmshadows/rmshadows.htm
-    float res = 1.0;
+    float res_sha = 1.0;
     float ph = 1e10;
     for(float t=mint; t<maxt;){
         float h = distanceField(ro + rd*t);
@@ -345,12 +345,12 @@ float softShadow(in vec3 ro, in vec3 rd, float mint, float maxt, float k, float 
             return 0.0;
         float y = h*h/(2.0*ph);
         float d = sqrt(h*h-y*y);
-        res = min(res, k*d/max(0.0,t-y));
+        res_sha = min(res_sha, k*d/max(0.0,t-y));
         ph = h;
         t += h;  
     }
-    res = clamp( res, 0.0, 1.0 );
-    return res*res*(3.0-2.0*res);
+    res_sha = clamp( res_sha, 0.0, 1.0 );
+    return res_sha*res_sha*(3.0-2.0*res_sha);
     //return res;
 }
 
@@ -426,7 +426,7 @@ vec4 render(vec3 ro, vec3 rd){
         vec3 sky_light = (BACKGROUND_COLOR*0.10)* clamp(0.5+0.5*dot(n,vec3(0.,1.,0.)), 0., 1.);
         vec3 bounce_light = (vec3(.06,.063,.07))* clamp(0.5+0.5*dot(n,vec3(0.,-1.,0.)), 0., 1.);
         //vec3 bounce_light = (LIGHT_COLOR*0.015)* sqrt(clamp( 0.1-0.9*n.y, 0.0, 1.0 ))*clamp(1.0-0.1*p.y,0.0,1.0);
-        vec3 sun_shadow = LIGHT_COLOR * softShadow(p+n*min_dist, LIGHT_DIRECTION, 0.01, 64.0, 12.0, min_dist);
+        vec3 sun_shadow = LIGHT_COLOR * softShadow(p+n*min_dist, LIGHT_DIRECTION, 0.01, 80, 12.0, min_dist);
         
         //vec3 ref = reflect(rd, n);
         vec3 sun_half = normalize(LIGHT_DIRECTION-rd);
