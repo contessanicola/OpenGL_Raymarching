@@ -1,28 +1,14 @@
-# opengl-cpp-raymarcher
+# opengl-cpp-template
+Opengl c++ template for vscode ide
 
-https://learnopengl.com/Getting-started/OpenGL
+This template is source code for this article https://medium.com/@vivekjha92/setup-opengl-with-vs-code-82852c653c43
 
-https://iquilezles.org/www/index.htm
+Requirements for this template to work
+1.  To run this template you should have GCC C++ compiler and the C/C++ extension for VS Code.
+    To setup both, follow this https://code.visualstudio.com/docs/cpp/config-mingw#_prerequisites
 
-https://www.shadertoy.com/
+How to run this project
 
-## controls
-WASD - movement
-
-Right Click - change direction
-
-CTRL/SPACE - down/up
-
-Q/E - Decrease/Increase speed
-
-Left/Right arrow - change scene
-
-## screenshots
-
-![menger3xAA](https://user-images.githubusercontent.com/47363206/134787511-deddeaf3-2005-42d4-8c58-a9de09e94214.png)
-
-
-![mandelbulb](https://user-images.githubusercontent.com/47363206/134894302-8012935f-61b9-42c4-93ae-81b7b7c943d8.png)
-
-
-![detailsmandelbulb](https://user-images.githubusercontent.com/47363206/134894323-b88fbefc-544f-48be-93eb-704fedffc296.png)
+1.  Clone this repo
+2.  Open this repo as a folder in Visual Studio Code
+3.  In VSCode menu under `Run` option select `run without debugging`

@@ -273,17 +273,26 @@ float sminCubic( float a, float b, float k ){
     return min( a, b ) - h*h*h*k*(1.0/6.0);
 }
 
-float sdTest(vec3 z){
-     float r;
-    int n = 0;
-    while (n < 10) {
-       if(z.x+z.y<0) z.xy = -z.yx; // fold 1
-       if(z.x+z.z<0) z.xz = -z.zx; // fold 2
-       if(z.y+z.z<0) z.zy = -z.yz; // fold 3	
-       z = z*5 - 1*(10-1.0);
-       n++;
+float sdTest(vec3 p){
+    vec3  c  = vec3(0.);
+    float r  = length(p);
+    float dr = 1.;
+
+    for(int i = 0; i < 6; i++){
+        if(r > 2140.)
+            break;
+        
+        float psi = abs(mod(atan(p.z ,p.y) + 3.14159265/4., 3.14159265/4.) - 3.14159265/8.);
+        p.yz = vec2(cos(psi), sin(psi)) * length(p.zy);
+        
+        vec3 p2 = p * p;
+        p = vec3(vec2(p2.x - p2.y, 1.5 * p.x * p.y), 2.*p.z * sqrt(p2.x + p2.y)) + c;	
+        
+        dr *= 1. / r + 2.*r;
+        r   = 1.2*length(p);
     }
-    return (length(z) ) * pow(10, -float(n));
+    
+    return log(r) * r / dr;  
 }
 
 float distanceField(vec3 p){
@@ -309,7 +318,8 @@ float distanceField(vec3 p){
         return SphereMod;
     }
     else if(scene == 4){
-        
+        float Test = sdTest(p);
+        return Test;
     }
     //float Torus = sdTorus(p-vec3(4.0,0.0,0.0),vec2(2.0,0.5));
     //
@@ -323,8 +333,7 @@ float distanceField(vec3 p){
     //return max (Menger,Plane);
     
 
-    //float Test = sdTest(p);
-    //return Test;
+    
 }
 
 vec3 calcNormal(vec3 p, float h){ // https://www.iquilezles.org/www/articles/normalsSDF/normalsSDF.htm
@@ -364,7 +373,6 @@ float ambientOcclusion(vec3 p, vec3 n){
     }
     return (1.0-ao * 0.22);
 }
-
 
 vec3 raymarching(vec3 ro, vec3 rd, out int iter){
     float min_d = 1.0;
