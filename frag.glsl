@@ -18,7 +18,7 @@
 
 
 in vec4 gl_FragCoord;
-in vec2 gl_PointCoord;
+//in vec2 gl_PointCoord;
 
 out vec4 FragColor; 
 uniform vec3 cameraPos;
